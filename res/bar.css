@@ -1,0 +1,37 @@
+:root{
+    --blue-bar-height: 8px;
+    --blue-bar-radius: 999px;
+    --blue-bar-start: #3b82f6;
+    --blue-bar-end: #1e3a8a;
+    --blue-bar-shadow: rgba(30,64,175,0.18);
+}
+
+/* Basic blue bar */
+.blue-bar{
+    display: block;
+    width: 100%;
+    height: var(--blue-bar-height);
+    background: linear-gradient(90deg, var(--blue-bar-start), var(--blue-bar-end));
+    border-radius: var(--blue-bar-radius);
+    box-shadow: 0 2px 6px var(--blue-bar-shadow) inset;
+    overflow: hidden;
+}
+
+/* optional sizes */
+.blue-bar.thin  { --blue-bar-height: 4px; }
+.blue-bar.large { --blue-bar-height: 12px; }
+
+/* optional animated shimmer */
+@keyframes blue-bar-shimmer {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+.blue-bar.animated{
+    background-size: 200% 100%;
+    animation: blue-bar-shimmer 2.5s linear infinite;
+}
+
+/* respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce){
+    .blue-bar.animated{ animation: none; }
+}
