@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>웹 계산기</title>
+  <style>
+    :root{
+      --bg: #0f172a;           /* slate-900 */
+      --panel: #111827cc;      /* gray-900/80 */
+      --text: #e5e7eb;         /* gray-200 */
+      --muted: #94a3b8;        /* slate-400 */
+      --accent: #22c55e;       /* green-500 */
+      --accent-2: #3b82f6;     /* blue-500 */
+      --danger: #ef4444;       /* red-500 */
+      --btn: #1f2937;          /* gray-800 */
+      --btn-hover: #374151;    /* gray-700 */
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{ box-sizing: border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; display:grid; place-items:center; background: radial-gradient(1200px 600px at 20% -10%, #0b1024 0%, transparent 60%),
+       radial-gradient(1000px 800px at 120% 110%, #0b1b33 0%, transparent 60%), var(--bg);
+      color:var(--text); font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, "Malgun Gothic", sans-serif;
+    }
+    .app{
+      width:min(360px, 92vw);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(8px);
+    }
+    .display{
+      padding: 22px 18px 12px;
+      display:flex; flex-direction:column; gap:8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .exp{
+      height: 22px;
+      color: var(--muted);
+      font-size: 14px; letter-spacing:.2px;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .result{
+      font-size: clamp(28px, 8vw, 44px);
+      font-weight: 700;
+      text-align:right;
+      word-break: break-all;
+    }
+    .grid{
+      display:grid; gap:10px; padding:16px;
+      grid-template-columns: repeat(4, 1fr);
+      background: transparent;
+    }
+    button{
+      appearance:none; border:0; border-radius:14px; padding:16px; font-size:18px; font-weight:600; color:var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: 0 6px 16px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,.03);
+      cursor:pointer; transition: transform .04s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover{ background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border-color: rgba(255,255,255,.12); }
+    button:active{ transform: translateY(1px) scale(.99); }
+    .op{ background: linear-gradient(180deg, rgba(59,130,246,.2), rgba(59,130,246,.08)); border-color: rgba(59,130,246,.35); }
+    .eq{ background: linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.08)); border-color: rgba(34,197,94,.45); }
+    .danger{ background: linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08)); border-color: rgba(239,68,68,.45); }
+    .span-2{ grid-column: span 2; }
+    .kbd{ display:block; color:var(--muted); font-size:12px; font-weight:500; margin-top:6px; }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .footer{ text-align:center; font-size:12px; color:var(--muted); padding:6px 0 14px; }
+    @media (prefers-reduced-motion: no-preference){
+      .app{ animation: pop .35s ease both; }
+      @keyframes pop{ from{ transform: translateY(6px); opacity:.0 } to{ transform:none; opacity:1 } }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" role="application" aria-label="웹 계산기">
+    <section class="display" aria-live="polite">
+      <div id="exp" class="exp" title="수식"></div>
+      <div id="result" class="result" title="결과">0</div>
+    </section>
+
+    <section class="grid" aria-label="키패드">
+      <button class="danger" data-action="clear" aria-label="전체 지우기">AC<span class="kbd">Esc / Del</span></button>
+      <button data-action="delete" aria-label="한 글자 지우기">DEL<span class="kbd">Backspace</span></button>
+      <button class="op" data-action="percent" aria-label="퍼센트">%</button>
+      <button class="op" data-op="/" aria-label="나누기">÷</button>
+
+      <button data-num="7">7</button>
+      <button data-num="8">8</button>
+      <button data-num="9">9</button>
+      <button class="op" data-op="*" aria-label="곱하기">×</button>
+
+      <button data-num="4">4</button>
+      <button data-num="5">5</button>
+      <button data-num="6">6</button>
+      <button class="op" data-op="-" aria-label="빼기">−</button>
+
+      <button data-num="1">1</button>
+      <button data-num="2">2</button>
+      <button data-num="3">3</button>
+      <button class="op" data-op="+" aria-label="더하기">+</button>
+
+      <button data-action="toggle" aria-label="부호 바꾸기">±</button>
+      <button class="span-2" data-num="0">0</button>
+      <button data-action="dot" aria-label="소수점">.</button>
+      <button class="eq" data-action="equals" aria-label="결과">= <span class="kbd">Enter</span></button>
+    </section>
+
+    <div class="footer">키보드 입력 지원: 0-9, + - * /, Enter, Backspace, Esc</div>
+  </main>
+
+  <script>
+  (function(){
+    const expEl = document.getElementById('exp');
+    const resEl = document.getElementById('result');
+
+    let current = '0';
+    let prev = null;        // number | null
+    let op = null;          // '+', '-', '*', '/', null
+    let justEvaluated = false;
+
+    const MAX_LEN = 18;
+
+    const fmt = (val) => {
+      // Keep as string but format with grouping; support decimals and negative
+      if (val === '오류') return val;
+      if (!isFinite(Number(val))) return '오류';
+      const [i, d] = String(val).split('.');
+      const sign = i.startsWith('-') ? '-' : '';
+      const digits = i.replace('-', '');
+      const withSep = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return d ? `${sign}${withSep}.${d}` : `${sign}${withSep}`;
+    };
+
+    const update = () => {
+      resEl.textContent = fmt(current);
+      const trail = op ? `${fmt(String(prev))} ${op}` : '';
+      expEl.textContent = trail;
+    };
+
+    const clearAll = () => { current = '0'; prev = null; op = null; justEvaluated = false; update(); };
+
+    const inputDigit = (d) => {
+      if (justEvaluated) { current = '0'; justEvaluated = false; }
+      if (current.replace('-', '').replace('.', '').length >= MAX_LEN) return;
+      if (current === '0') current = d; else current += d;
+      update();
+    };
+
+    const inputDot = () => {
+      if (justEvaluated) { current = '0'; justEvaluated = false; }
+      if (!current.includes('.')) current += '.';
+      update();
+    };
+
+    const setOperator = (nextOp) => {
+      if (op && !justEvaluated) {
+        // chain calculation
+        evaluate();
+      }
+      prev = Number(current);
+      op = nextOp;
+      justEvaluated = false;
+      current = '0';
+      update();
+    };
+
+    const evaluate = () => {
+      if (op === null || prev === null) return;
+      const a = prev;
+      const b = Number(current);
+      let out = 0;
+      switch(op){
+        case '+': out = a + b; break;
+        case '-': out = a - b; break;
+        case '*': out = a * b; break;
+        case '/': out = b === 0 ? NaN : a / b; break;
+      }
+      if (!isFinite(out)) { current = '오류'; prev = null; op = null; justEvaluated = true; update(); return; }
+      current = String(+parseFloat(out.toPrecision(14))); // trim floating errors
+      prev = null; op = null; justEvaluated = true;
+      update();
+    };
+
+    const inputPercent = () => {
+      const num = Number(current);
+      if (!isFinite(num)) return;
+      current = String(num / 100);
+      update();
+    };
+
+    const toggleSign = () => {
+      if (current === '0' || current === '오류') return;
+      current = current.startsWith('-') ? current.slice(1) : '-' + current;
+      update();
+    };
+
+    const deleteLast = () => {
+      if (justEvaluated) { clearAll(); return; }
+      if (current.length <= 1 || (current.length === 2 && current.startsWith('-'))) current = '0';
+      else current = current.slice(0, -1);
+      update();
+    };
+
+    // Button events
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.num) return inputDigit(btn.dataset.num);
+        if (btn.dataset.op) return setOperator(btn.dataset.op);
+        const act = btn.dataset.action;
+        switch(act){
+          case 'clear': return clearAll();
+          case 'delete': return deleteLast();
+          case 'percent': return inputPercent();
+          case 'dot': return inputDot();
+          case 'equals': return evaluate();
+          case 'toggle': return toggleSign();
+        }
+      });
+    });
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      const { key } = e;
+      if (/^\d$/.test(key)) return inputDigit(key);
+      if (key === '.') return inputDot();
+      if (key === '+' || key === '-' || key === '*' || key === '/') return setOperator(key);
+      if (key === 'Enter' || key === '=') { e.preventDefault(); return evaluate(); }
+      if (key === 'Backspace') { e.preventDefault(); return deleteLast(); }
+      if (key === 'Escape' || key === 'Delete') { e.preventDefault(); return clearAll(); }
+      if (key === '%') return inputPercent();
+    });
+
+    // Init
+    update();
+  })();
+  </script>
+</body>
+</html>
